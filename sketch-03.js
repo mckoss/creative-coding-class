@@ -23,10 +23,27 @@ const sketch = ({width, height}) => {
     context.fillStyle = 'white';
     context.fillRect(0, 0, width, height);
 
+    for (let i = 0; i < agents.length; i++) {
+        for (let j = i + 1; j < agents.length; j++) {
+            if (agents[i].pairsWith(agents[j])) {
+                agents[i].attract(agents[j]);
+                let dist = agents[i].pos.dist(agents[j].pos);
+                if (dist > 4) {
+                    context.lineWidth = Math.min(400 / dist, 10);
+                    context.beginPath();
+                    context.moveTo(agents[i].pos.x, agents[i].pos.y);
+                    context.lineTo(agents[j].pos.x, agents[j].pos.y);
+                    context.stroke();
+                }
+            }
+        }
+    }
+
     for (let agent of agents) {
         agent.update(box);
         agent.draw(context);
     }
+
   };
 };
 
@@ -47,6 +64,23 @@ class Vector {
 
     add(other) {
         return new Vector(this.x + other.x, this.y + other.y);
+    }
+
+    sub(other) {
+        return new Vector(this.x - other.x, this.y - other.y);
+    }
+
+    dist(other) {
+        return Math.sqrt((this.x - other.x) ** 2 + (this.y - other.y) ** 2);
+    }
+
+    mult(c) {
+        return new Vector(this.x * c, this.y * c);
+    }
+
+    unit() {
+        let d = Math.sqrt(this.x ** 2 + this.y ** 2);
+        return this.mult(1/d);
     }
 }
 
@@ -82,12 +116,12 @@ function constrain(x, min, max) {
     return x;
 }
 
-const MAX_SPEED = 3;
+const MAX_SPEED = 4;
 
 class Agent {
     pos;
     vel;
-    radius = random.range(6, 18);
+    radius = random.range(4, 30);
 
     constructor(x, y) {
         this.pos = new Vector(x, y);
@@ -96,6 +130,7 @@ class Agent {
 
     update(box) {
         this.pos = this.pos.add(this.vel);
+        this.vel = this.vel.mult(0.999);
         box.bounce(this.pos, this.radius, this.vel);
     }
 
@@ -110,5 +145,27 @@ class Agent {
         context.stroke();
 
         context.restore();
+    }
+
+    pairsWith(other) {
+        let dist = this.pos.dist(other.pos);
+        return dist < 200;
+    }
+
+    attract(other) {
+        let mass = this.radius ** 2 + other.radius ** 2;
+        let dist2 = this.pos.dist(other.pos) ** 2;
+
+        let a = 50 * mass / dist2 / this.radius ** 2;
+        if (a > 1) {
+            a = 1;
+        }
+        let a2 = 50 * mass / dist2 / other.radius ** 2;
+        if (a2 > 1) {
+            a2 = 1;
+        }
+        let d = other.pos.sub(this.pos).unit();
+        this.vel = this.vel.add(d.mult(a));
+        other.vel = other.vel.sub(d.mult(a2));
     }
 }
