@@ -1,6 +1,7 @@
 const canvasSketch = require('canvas-sketch');
 const { lerp } = require('canvas-sketch-util/math');
 const math = require('canvas-sketch-util/math');
+const { getRandomSeed } = require('canvas-sketch-util/random');
 const random = require('canvas-sketch-util/random');
 
 const MARGIN = 32;
@@ -17,16 +18,20 @@ const sketch = ({width, height}) => {
       agents.push(new Agent(random.range(MARGIN, width - MARGIN), random.range(MARGIN, width - MARGIN)));
   }
 
+  // Put the larger agents behind (first) so smaller ones are visible when they overlap.
+  agents.sort((a, b) => b.radius - a.radius);
+
   const box = new Box(width, height);
 
   return ({ context, width, height }) => {
     context.fillStyle = 'white';
     context.fillRect(0, 0, width, height);
 
+    // Draw without moving
+
     for (let i = 0; i < agents.length; i++) {
         for (let j = i + 1; j < agents.length; j++) {
             if (agents[i].pairsWith(agents[j])) {
-                agents[i].attract(agents[j]);
                 let dist = agents[i].pos.dist(agents[j].pos);
                 if (dist > 4) {
                     context.lineWidth = Math.min(400 / dist, 10);
@@ -40,8 +45,21 @@ const sketch = ({width, height}) => {
     }
 
     for (let agent of agents) {
-        agent.update(box);
         agent.draw(context);
+    }
+
+    // Move
+    for (let agent of agents) {
+        agent.update(box);
+    }
+
+    // Update velocities
+    for (let i = 0; i < agents.length; i++) {
+        for (let j = i + 1; j < agents.length; j++) {
+            if (agents[i].pairsWith(agents[j])) {
+                agents[i].attract(agents[j]);
+            }
+        }
     }
 
   };
@@ -118,10 +136,13 @@ function constrain(x, min, max) {
 
 const MAX_SPEED = 4;
 
+const colorValue = () => random.rangeFloor(128, 256);
+
 class Agent {
     pos;
     vel;
     radius = random.range(4, 30);
+    color = `rgb(${colorValue()}, ${colorValue()}, ${colorValue()})`;
 
     constructor(x, y) {
         this.pos = new Vector(x, y);
@@ -139,6 +160,8 @@ class Agent {
         context.lineWidth = 4;
         this.pos.translate(context);
 
+        context.fillStyle = this.color;
+
         context.beginPath();
         context.arc(0, 0, this.radius, 0, 2 * Math.PI);
         context.fill();
@@ -149,7 +172,7 @@ class Agent {
 
     pairsWith(other) {
         let dist = this.pos.dist(other.pos);
-        return dist < 200;
+        return dist < 150;
     }
 
     attract(other) {
