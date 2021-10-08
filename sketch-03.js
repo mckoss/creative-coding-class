@@ -7,7 +7,7 @@ const random = require('canvas-sketch-util/random');
 const MARGIN = 32;
 
 const settings = {
-  dimensions: [ 1024, 1024 ],
+  dimensions: [ 1080, 1080 ],
   animate: true
 };
 
