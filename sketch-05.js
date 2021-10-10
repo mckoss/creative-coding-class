@@ -11,32 +11,60 @@ const fontFamily = 'Times';
 
 let glyph = 'K';
 
-const sketch = () => {
+const glyphCanvas = document.createElement('canvas');
+const glyphContext = glyphCanvas.getContext('2d');
+
+const sketch = ({width, height}) => {
+  const cell = 20;
+  const cols = width / cell;
+  const rows = height / cell;
+  glyphCanvas.width = cols;
+  glyphCanvas.height = rows;
+
   return ({ context, width, height }) => {
-    context.fillStyle = 'beige';
-    context.fillRect(0, 0, width, height);
+    glyphContext.fillStyle = 'black';
+    glyphContext.fillRect(0, 0, cols, rows);
 
-    context.fillStyle = 'black';
-    context.font  = `${fontSize}px ${fontFamily}`;
+    glyphContext.fillStyle = 'white';
+    glyphContext.font = `${cols}px ${fontFamily}`;
 
-    const metrics = context.measureText(glyph);
+    const metrics = glyphContext.measureText(glyph);
     const mx = -metrics.actualBoundingBoxLeft;
     const my = -metrics.actualBoundingBoxAscent;
     const mw = metrics.actualBoundingBoxLeft + metrics.actualBoundingBoxRight;
     const mh = metrics.actualBoundingBoxAscent + metrics.actualBoundingBoxDescent;
 
-    const x = width/2 - mw/2 - mx;
-    const y = height/2 - mh/2 - my;
+    const x = cols/2 - mw/2 - mx;
+    const y = rows/2 - mh/2 - my;
 
-    context.save();
-    context.translate(x, y);
+    glyphContext.save();
+    glyphContext.translate(x, y);
+    glyphContext.fillText(glyph, 0, 0);
+    glyphContext.restore();
 
-    context.beginPath();
-    context.rect(mx, my, mw, mh);
-    context.stroke();
+    // RGBA array - 4 bytes per pixel
+    const glyphPixels = glyphContext.getImageData(0, 0, cols, rows).data;
+    
+    for (let i = 0; i < rows * cols; i++) {
+        let col = i % cols;
+        let row = Math.floor(i / cols);
 
-    context.fillText(glyph, 0, 0);
-    context.restore();
+        const r = glyphPixels[4 * i];
+        const g = glyphPixels[4 * i + 1];
+        const b = glyphPixels[4 * i + 2];
+        const a = glyphPixels[4 * i + 3];
+
+        context.fillStyle = `rgb(${r}, ${g}, ${b})`;
+
+        context.save();
+        context.translate(col * cell, row * cell);
+        context.beginPath()
+        context.arc(cell/2, cell/2, cell * 0.4, 0, 2 * Math.PI);
+        context.fill();
+        context.restore();
+    }
+
+    // context.drawImage(glyphCanvas, 0, 0);
 
   };
 };
