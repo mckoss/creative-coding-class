@@ -1,0 +1,2 @@
+language = "nodejs"
+run = "tools/run-sketch sketch-04"

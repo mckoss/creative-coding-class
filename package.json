@@ -11,7 +11,8 @@
   "license": "ISC",
   "dependencies": {
     "canvas-sketch": "^0.7.4",
-    "canvas-sketch-util": "^1.10.0"
+    "canvas-sketch-util": "^1.10.0",
+    "ffmpeg-static": "^4.4.0"
   },
   "devDependencies": {
     "canvas-sketch-cli": "^1.11.14"

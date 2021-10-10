@@ -21,8 +21,8 @@ const sketch = ({width, height}) => {
     const marginX = (width - gridWidth) / 2;
     const marginY = (height - gridHeight) / 2;
 
-    return ({ context, width, height }) => {
-        context.fillStyle = 'white';
+    return ({ context, width, height, frame }) => {
+        context.fillStyle = 'beige';
         context.lineWidth = 4;
         context.fillRect(0, 0, width, height);
 
@@ -35,11 +35,18 @@ const sketch = ({width, height}) => {
             const x = col * cellWidth;
             const y = row * cellHeight;
 
+            const noise = random.noise3D(x, y, frame * 20, 0.002);
+            const rot = math.mapRange(noise, -1, 1,  -0.2 * Math.PI, 0.2 * Math.PI);
+            const scale = math.mapRange(noise, -1, 1, 1, 30);
+
+            context.lineWidth = scale;
+
             const w = cellWidth * 0.8;
             const h = cellHeight * 0.8;
 
             context.save()
             context.translate(x + cellWidth/2, y + cellHeight/2);
+            context.rotate(rot);
             context.beginPath();
             context.moveTo(-w / 2, 0);
             context.lineTo(w / 2, 0);
