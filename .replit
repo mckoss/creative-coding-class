@@ -1,2 +1,2 @@
 language = "nodejs"
-run = "tools/run-sketch sketch-04"
+run = "tools/run-sketch sketch-03"

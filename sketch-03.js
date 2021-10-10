@@ -4,6 +4,10 @@ const math = require('canvas-sketch-util/math');
 const { getRandomSeed } = require('canvas-sketch-util/random');
 const random = require('canvas-sketch-util/random');
 
+import {Pane} from 'tweakpane';
+import * as EssentialsPlugin from '@tweakpane/plugin-essentials';
+const interpolate = require('color-interpolate');
+
 const MARGIN = 32;
 
 const settings = {
@@ -11,30 +15,69 @@ const settings = {
   animate: true
 };
 
+// Tweakpane parameters
+const params = {
+  speed: 4,
+  agents: 40,
+  sizeRange: { min: 1, max: 30},
+  colorRange: { min: 128, max: 255 },
+  track: false
+}
+
+function createPane() {
+  const pane = new Pane();
+  pane.registerPlugin(EssentialsPlugin);
+
+  const fParams = pane.addFolder({title: 'Params'});
+  fParams.addInput(params, 'agents', { min: 0, max: 100, step: 1 });
+  fParams.addInput(params, 'speed', {min: 1, max: 20});
+  fParams.addInput(params, 'sizeRange', { min: 1, max: 100, step: 1 });
+  fParams.addInput(params, 'colorRange', { min: 0, max: 255, step: 1 });
+  fParams.addInput(params, 'track');
+}
+
 const sketch = ({width, height}) => {
   let agents = [];
 
-  for (let i = 0; i < 40; i++) {
-      agents.push(new Agent(random.range(MARGIN, width - MARGIN), random.range(MARGIN, width - MARGIN)));
+  function regenerateAgents() {
+      while (agents.length > params.agents) {
+          agents = agents.slice(0, params.agents);
+          return;
+      }
+
+      for (let i = agents.length; i < params.agents; i++) {
+          agents.push(new Agent(random.range(MARGIN, width - MARGIN), random.range(MARGIN, width - MARGIN)));
+      }
+
+      // Put the larger agents behind (first) so smaller ones are visible when they overlap.
+      agents.sort((a, b) => b.radius - a.radius);
   }
 
-  // Put the larger agents behind (first) so smaller ones are visible when they overlap.
-  agents.sort((a, b) => b.radius - a.radius);
-
+  regenerateAgents();
   const box = new Box(width, height);
 
   return ({ context, width, height }) => {
+    if (agents.length !== params.agents) {
+        regenerateAgents();
+    }
+
     context.fillStyle = 'white';
     context.fillRect(0, 0, width, height);
 
     // Draw without moving
+
+    context.save();
+    if (params.track) {
+        console.log('tracking');
+        context.translate(-agents[0].pos.x + width/2, -agents[0].pos.y + height/2);
+    }
 
     for (let i = 0; i < agents.length; i++) {
         for (let j = i + 1; j < agents.length; j++) {
             if (agents[i].pairsWith(agents[j])) {
                 let dist = agents[i].pos.dist(agents[j].pos);
                 if (dist > 4) {
-                    context.lineWidth = Math.min(400 / dist, 10);
+                    context.lineWidth = math.mapRange(dist, 0, 5 * params.sizeRange.max, 7, 1)
                     context.beginPath();
                     context.moveTo(agents[i].pos.x, agents[i].pos.y);
                     context.lineTo(agents[j].pos.x, agents[j].pos.y);
@@ -47,6 +90,8 @@ const sketch = ({width, height}) => {
     for (let agent of agents) {
         agent.draw(context);
     }
+
+    context.restore();
 
     // Move
     for (let agent of agents) {
@@ -64,8 +109,6 @@ const sketch = ({width, height}) => {
 
   };
 };
-
-canvasSketch(sketch, settings);
 
 class Vector {
     x;
@@ -134,19 +177,17 @@ function constrain(x, min, max) {
     return x;
 }
 
-const MAX_SPEED = 4;
-
-const colorValue = () => random.rangeFloor(128, 256);
+const colorValue = () => random.rangeFloor(params.colorRange.min, params.colorRange.max);
 
 class Agent {
     pos;
     vel;
-    radius = random.range(4, 30);
+    radius = random.range(params.sizeRange.min, params.sizeRange.max);
     color = `rgb(${colorValue()}, ${colorValue()}, ${colorValue()})`;
 
     constructor(x, y) {
         this.pos = new Vector(x, y);
-        this.vel = new Vector(random.range(-MAX_SPEED, MAX_SPEED), random.range(-MAX_SPEED, MAX_SPEED));
+        this.vel = new Vector(random.range(-params.speed, params.speed), random.range(-params.speed, params.speed));
     }
 
     update(box) {
@@ -172,7 +213,7 @@ class Agent {
 
     pairsWith(other) {
         let dist = this.pos.dist(other.pos);
-        return dist < 150;
+        return dist < params.sizeRange.max * 5;
     }
 
     attract(other) {
@@ -192,3 +233,6 @@ class Agent {
         other.vel = other.vel.sub(d.mult(a2));
     }
 }
+
+createPane();
+canvasSketch(sketch, settings);
