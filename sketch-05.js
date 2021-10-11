@@ -8,7 +8,7 @@ const interpolate = require('color-interpolate');
 
 const settings = {
   dimensions: [ 1080, 1080 ],
-  animate: true
+  // animate: true
 };
 
 let manager;
@@ -27,7 +27,7 @@ const params = {
   cell: 20,
   filter: { min: 0, max: 180 },
   radius: 0.45,
-}
+};
 
 function createPane() {
   const pane = new Pane();
@@ -38,6 +38,10 @@ function createPane() {
   fParams.addInput(params, 'cell', { min: 5, max: 100, step: 1 });
   fParams.addInput(params, 'filter', { min: 0, max: 255, step: 1 });
   fParams.addInput(params, 'radius', { min: 0.05, max: 0.6 });
+
+  pane.on('change', () => {
+      manager.render();
+  });
 }
 
 const sketch = ({width, height}) => {
@@ -104,7 +108,8 @@ function getGlyphDots(glyph, rows, cols) {
         // const b = glyphPixels[4 * i + 2];
         // const a = glyphPixels[4 * i + 3];
 
-        if (g >= params.filter.min || g <= params.filter.max) {
+        if (g >= params.filter.min && g <= params.filter.max) {
+            console.log(g, params.filter);
             results.push([col, row, g]);
         }
     }
@@ -117,7 +122,6 @@ async function start() {
 }
 
 document.addEventListener('keyup', (e) => {
-    console.log(e);
     if (e.keyCode > 32 && !e.ctrlKey) {
         glyph = e.key;
         manager.render();
