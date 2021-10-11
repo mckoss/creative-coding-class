@@ -1,7 +1,5 @@
 const canvasSketch = require('canvas-sketch');
-const { lerp } = require('canvas-sketch-util/math');
 const math = require('canvas-sketch-util/math');
-const { getRandomSeed } = require('canvas-sketch-util/random');
 const random = require('canvas-sketch-util/random');
 
 const MARGIN = 32;
