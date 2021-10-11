@@ -8,7 +8,7 @@ const interpolate = require('color-interpolate');
 
 const settings = {
   dimensions: [ 1080, 1080 ],
-  // animate: true
+  animate: true
 };
 
 let manager;
@@ -23,7 +23,7 @@ const glyphContext = glyphCanvas.getContext('2d');
 
 // Tweakpane parameters
 const params = {
-  speed: 4,
+  speed: { min: 4, max: 8 },
   cell: 20,
   filter: { min: 0, max: 180 },
   radius: 0.45,
@@ -45,7 +45,12 @@ function createPane() {
 }
 
 const sketch = ({width, height}) => {
+  let targetDots = null;
+  let sourceDots = null;
+  let dotSpeeds = null;
+
   return ({ context, width, height }) => {
+
     context.fillStyle = 'white';
     context.fillRect(0, 0, width, height);
 
@@ -53,23 +58,59 @@ const sketch = ({width, height}) => {
     const cols = Math.floor(width / cell);
     const rows = Math.floor(height / cell);
 
-    let dots = getGlyphDots(glyph, rows, cols);
+    let startingDot = [width / 2, height /2, 255];
+    if (targetDots === null) {
+        targetDots = getGlyphDots(glyph, rows, cols, cell);
+        sourceDots = targetDots.map(() => startingDot.concat());
+        dotSpeeds = targetDots.map(() => random.range(params.speed.min, params.speed.max));
+    }
 
-    for (let dot of dots) {
+    // Draw all the source dots...
+    for (let dot of sourceDots) {
         const [x, y, v] = dot;
         context.fillStyle = `rgb(${v}, ${v}, ${v})`;
 
         context.save();
-        context.translate(x * cell, y * cell);
+        context.translate(x, y);
         context.beginPath()
         context.arc(cell/2, cell/2, cell * params.radius, 0, 2 * Math.PI);
         context.fill();
         context.restore();
     }
+
+    let isFinished = true;
+
+    // Move them toward their target positions and values.
+    for (let i = 0; i < sourceDots.length; i++) {
+        const sourceDot = sourceDots[i];
+        const targetDot = targetDots[i];
+
+        if (sourceDot === targetDot) {
+            continue;
+        }
+        isFinished = false;
+        let dx = targetDot[0] - sourceDot[0];
+        let dy = targetDot[1] - sourceDot[1];
+        sourceDot[2] = 0.99 * sourceDot[2] + 0.01 * targetDot[2];
+        const dist = Math.sqrt(dx ** 2 + dy ** 2);
+        if (dist <= dotSpeeds[i]) {
+            sourceDots[i] = targetDot;
+        } else {
+            dx = dx / dist * Math.min(dotSpeeds[i], dist);
+            dy = dy / dist * Math.min(dotSpeeds[i], dist);
+            sourceDot[0] = sourceDot[0] + dx;
+            sourceDot[1] = sourceDot[1] + dy;
+        }
+    }
+
+    if (isFinished) {
+        console.log('all finished');
+        targetDots = null;
+    }
   };
 };
 
-function getGlyphDots(glyph, rows, cols) {
+function getGlyphDots(glyph, rows, cols, cell) {
     // array of [x, y, value: 0 - 255]
     let results = [];
 
@@ -109,8 +150,7 @@ function getGlyphDots(glyph, rows, cols) {
         // const a = glyphPixels[4 * i + 3];
 
         if (g >= params.filter.min && g <= params.filter.max) {
-            console.log(g, params.filter);
-            results.push([col, row, g]);
+            results.push([col * cell, row * cell, g]);
         }
     }
 
