@@ -264,36 +264,39 @@ function testDotDistance() {
 function testPairDots() {
     console.log("Begin pairDots Test");
 
-    let empty1 = [];
-    let empty2 = [];
-    let pairs = pairDots(empty1, empty2);
-    console.assert(pairs.length === 0, "empty pairs");
-
     let square = [[-1, -1, 0], [-1, 1, 0], [1, 1, 0], [1, -1, 0]];
-
     let origin = [[0, 0, 0]];
-    pairs = pairDots(origin, square);
-    assertPairs(pairs, '[{"i":0,"j":0},{"i":0,"j":1},{"i":0,"j":2},{"i":0,"j":3}]');
-
     let pair = [[-5, 0, 0], [5, 0, 0]];
-    pairs = pairDots(pair, square);
-    assertPairs(pairs, '[{"i":0,"j":0},{"i":0,"j":1},{"i":1,"j":2},{"i":1,"j":3}]');
-
     let rotatedSquare = square.map((dot) => rotateDot(dot, Math.PI/2));
-
-    pairs = pairDots(square, rotatedSquare);
-    assertPairs(pairs, '[{"i":0,"j":1},{"i":1,"j":2},{"i":2,"j":3},{"i":3,"j":0}]');
-
-    // Optimization test - naive pairing using 3 instead of 2 pairs.
+    let slightlyRotatedSquare = square.map((dot) => rotateDot(dot, Math.PI/8));
     let source = [[0, 0, 0], [0, 1, 0]];
     let target = [[2, 1, 0], [2, 2, 0]];
-    pairs = pairDots(source, target);
-    assertPairs(pairs, '[{"i":1,"j":0},{"i":1,"j":1}]');
+
+    let tests = [
+        [ [], [], '[]'],
+        [ origin, square, '[{"i":0,"j":0},{"i":0,"j":1},{"i":0,"j":2},{"i":0,"j":3}]'],
+        [ pair, square, '[{"i":0,"j":0},{"i":0,"j":1},{"i":1,"j":2},{"i":1,"j":3}]'],
+        [ square, slightlyRotatedSquare, '[{"i":0,"j":0},{"i":1,"j":1},{"i":2,"j":2},{"i":3,"j":3}]'],
+        [ square, rotatedSquare, '[{"i":0,"j":1},{"i":1,"j":2},{"i":2,"j":3},{"i":3,"j":0}]'],
+        [ source, target, '[{"i":1,"j":0},{"i":1,"j":1}]'],
+
+    ];
+
+    for (let i = 0; i < tests.length; i++) {
+        assertPairs(i, pairDots(tests[i][0], tests[i][1]), tests[i][2]);
+    }
 
     console.log("End pairDots Test");
 
-    function assertPairs(pairs, s) {
-        console.assert(pairsString(pairs) === s, `Unexpected pairs:\n${pairsString(pairs)} !=\n${s}`);
+    function assertPairs(i, pairs, s) {
+        console.assert(pairsString(pairs) === s, `Unexpected pairs (#${i + 1}):\n${pairsString(pairs)} !=\n${s}`);
+    }
+
+    function pairsString(pairs) {
+        return JSON.stringify(pairs.map((pair) => {
+            let { i, j } = pair;
+            return { i, j };
+        }));
     }
 }
 
@@ -303,12 +306,7 @@ function rotateDot(dot, angle) {
     return [x, y, dot[2]];
 }
 
-function pairsString(pairs) {
-    return JSON.stringify(pairs.map((pair) => {
-        let { i, j } = pair;
-        return { i, j };
-    }));
-}
+
 
 testDotDistance();
 testPairDots();
