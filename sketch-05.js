@@ -16,7 +16,7 @@ let manager;
 const fontSize = 1080;
 const fontFamily = 'Times';
 
-let message = "Hello";
+let message = "ABCDEFGHIJKLMNOPQRSTUVWXYZ";
 let nextCharacter = 0;
 
 const glyphCanvas = document.createElement('canvas');
@@ -48,7 +48,7 @@ function createPane() {
 const sketch = ({width, height}) => {
   let targetDots = null;
   let sourceDots = null;
-  let dotSpeeds = null;
+  let pairs = null;
   let isFinished = false;
   let waiting = false;
   let glyph = null;
@@ -66,45 +66,41 @@ const sketch = ({width, height}) => {
     const cols = Math.floor(width / cell);
     const rows = Math.floor(height / cell);
 
-    if (targetDots === null) {
+    if (pairs === null) {
         previousGlyph = glyph;
         glyph = message[nextCharacter];
         nextCharacter = (nextCharacter + 1) % message.length;
-        console.log(`Next Transition: ${previousGlyph} => ${glyph}`);
         targetDots = getGlyphDots(glyph, rows, cols, cell);
         if (previousGlyph !== null) {
             sourceDots = getGlyphDots(previousGlyph, rows, cols, cell);
         } else {
-            sourceDots = targetDots.map((dot) => [
-                random.rangeFloor(-width, 2 * width),
-                random.rangeFloor(-height, 2 * height),
-                dot[2]]
-            );
-            if (sourceDots.length !== targetDots.length) {
-                waiting = true;
-                throw Error(`1. ${sourceDots.length} != ${targetDots.length}`);
-            }
+            sourceDots = getGlyphDots('+', rows, cols, cell);
         }
-        matchDots(sourceDots, targetDots);
-        if (sourceDots.length !== targetDots.length) {
-            waiting = true;
-            throw Error(`2. ${sourceDots.length} != ${targetDots.length}`);
+        pairs = pairDots(sourceDots, targetDots);
+        console.log(`Next Transition: ${previousGlyph} (${sourceDots.length}) => ` +
+                    `${glyph} (${targetDots.length}) (${pairs.length} pairs)`);
+        for (let pair of pairs) {
+            let sourceDot = sourceDots[pair.i];
+            let targetDot = targetDots[pair.j];
+
+            [pair.x, pair.y, pair.v] = sourceDot;
+            pair.speed = random.range(params.speed.min, params.speed.max);
+
+            // Pre-calculate step size
+            pair.dx = targetDot[0] - sourceDot[0];
+            pair.dy = targetDot[1] - sourceDot[1];
+            const dist = Math.sqrt(pair.dx ** 2 + pair.dy ** 2);
+            pair.dx *= pair.speed / dist;
+            pair.dy *= pair.speed / dist;
         }
-        dotSpeeds = targetDots.map(() => random.range(params.speed.min, params.speed.max));
     }
 
-    if (sourceDots.length !== targetDots.length) {
-        waiting = true;
-        throw Error(`3. ${sourceDots.length} != ${targetDots.length}`);
-    }
-
-    // Draw all the source dots...
-    for (let dot of sourceDots) {
-        const [x, y, v] = dot;
-        context.fillStyle = `rgb(${v}, ${v}, ${v})`;
+    // Draw all the dots (some may overlap);
+    for (let pair of pairs) {
+        context.fillStyle = `rgb(${pair.v}, ${pair.v}, ${pair.v})`;
 
         context.save();
-        context.translate(x, y);
+        context.translate(pair.x, pair.y);
         context.beginPath()
         context.arc(cell/2, cell/2, cell * params.radius, 0, 2 * Math.PI);
         context.fill();
@@ -113,48 +109,40 @@ const sketch = ({width, height}) => {
 
     isFinished = true;
 
-    if (sourceDots.length !== targetDots.length) {
-        waiting = true;
-        throw Error(`4. ${sourceDots.length} != ${targetDots.length}`);
-    }
-
-    // Move them toward their target positions and values.
-    for (let i = 0; i < sourceDots.length; i++) {
-        const sourceDot = sourceDots[i];
-        const targetDot = targetDots[i];
-
-        if (sourceDot === targetDot) {
+    // Move each pairing toward it's target positions and values.
+    for (let pair of pairs) {
+        if (pair.speed === 0) {
             continue;
         }
 
+        const targetDot = targetDots[pair.j];
+        
         isFinished = false;
-        let dx = targetDot[0] - sourceDot[0];
-        let dy = targetDot[1] - sourceDot[1];
-        sourceDot[2] = 0.99 * sourceDot[2] + 0.01 * targetDot[2];
+
+        let dx = targetDot[0] - pair.x;
+        let dy = targetDot[1] - pair.y;
+        pair.v = 0.99 * pair.v + 0.01 * targetDot[2];
         const dist = Math.sqrt(dx ** 2 + dy ** 2);
 
-        if (dist <= dotSpeeds[i]) {
-            sourceDots[i] = targetDot;
+        // Not possible to over-shoot.
+        if (dist <= pair.speed) {
+            [pair.x, pair.y, pair.v] = targetDot;
+            pair.speed = 0;
         } else {
-            dx = dx / dist * Math.min(dotSpeeds[i], dist);
-            dy = dy / dist * Math.min(dotSpeeds[i], dist);
-            sourceDot[0] = sourceDot[0] + dx;
-            sourceDot[1] = sourceDot[1] + dy;
+            pair.x += pair.dx;
+            pair.y += pair.dy;
         }
     }
     
-    if (sourceDots.length !== targetDots.length) {
-        throw Error(`3. ${sourceDots.length} != ${targetDots.length}`);
-    }
-
     if (isFinished) {
         waiting = true;
+        pairs = null;
         targetDots = null;
         sourceDots = null;
         console.log('all finished');
         setTimeout(() => {
             waiting = false;
-        }, 3000);
+        }, 1000);
     }
   };
 };
@@ -206,59 +194,36 @@ function getGlyphDots(glyph, rows, cols, cell) {
     return results;
 }
 
-// Modify the sourceDots and targetDots array so that
-// 1. They are the same size (equal to the larger of the two dimensions).
-// 2. The nearest source and target dots are at the same index.
-function matchDots(sourceDots, targetDots) {
-    let targetsUsed = new Set();
-    let matches = new Map();
-
-    // Function is symetrical - assume the source array
-    // is not longer than the target one - otherwise
-    // verse the arguments.
-    if (targetDots.length < sourceDots.length) {
-        return matchDots(targetDots, sourceDots);
-    }
-
-    // Loop through shorter list, matching with best matches from
-    // the longer one.
+// Generating a mapping of source to target dots s.t.
+// for each dot, it is paired with the closest other
+// dot.  Note that dots may be paired with multiple other
+// dots in the other set.
+function pairDots(sourceDots, targetDots) {
+    // N*M Array - Whoah - could get very big
+    let pairings = [];
     for (let i = 0; i < sourceDots.length; i++) {
-        let j = closestMatch(sourceDots[i], targetDots);
-        matches.set(sourceDots[i], j);
-        targetsUsed.add(j);
-    }
-
-    let addedDots = [];
-
-    // Now make duplicate entries from the source list
-    // to match nearest targets.
-    for (let j = 0; j < targetDots.length; j++) {
-        if (targetsUsed.has(j)) {
-            continue;
+        for (let j = 0; j < targetDots.length; j++) {
+            pairings.push({i, j, dist: dotDistance(sourceDots[i], targetDots[j])});
         }
-        let i = closestMatch(targetDots[j], sourceDots);
-        let newSource = sourceDots[i].concat();
-        addedDots.push(newSource);
-        matches.set(newSource, j);
     }
 
-    if (sourceDots.length + addedDots.length !== targetDots.length) {
-        throw Error('MATCHES ERROR');
+    pairings.sort((a, b) => a.dist - b.dist);
+
+    let numPairs = Math.max(sourceDots.length, targetDots.length);
+
+    let sourcesPaired = new Set();
+    let targetsPaired = new Set();
+    let results = [];
+
+    for (let pair of pairings) {
+        if (!sourcesPaired.has(pair.i) || !targetsPaired.has(pair.j)) {
+            results.push(pair);
+            sourcesPaired.add(pair.i);
+            targetsPaired.add(pair.j);
+        }
     }
 
-    extend(sourceDots, addedDots);
-
-    // Rearrange the all sourceDots in targetDots order.
-    sourceDots.sort((a, b) => {
-        return matches.get(a) - matches.get(b);
-    });
-}
-
-// Find the "nearest" counterpart dot from the target set.
-function closestMatch(dot, targetDots) {
-    return findMax(dot, targetDots, (dot, other) => {
-        return -dotDistance(dot, other);
-    });
+    return results;
 }
 
 function dotDistance(dot1, dot2) {
@@ -266,26 +231,6 @@ function dotDistance(dot1, dot2) {
         (dot1[0] - dot2[0]) ** 2 +
         (dot1[1] - dot2[1]) ** 2 +
         (dot1[2] - dot2[2]) ** 2 * 4);
-}
-
-function findMax(v, a, scoreFunc) {
-    let bestScore = undefined;
-    let best = -1;
-
-    for (let i = 0; i < a.length; i++) {
-        let score = scoreFunc(v, a[i]);
-        if (bestScore === undefined || score > bestScore) {
-            bestScore = score;
-            best = i;
-        }
-    }
-    return best;
-}
-
-function extend(a, b) {
-    for (let item of b) {
-        a.push(item);
-    }
 }
 
 function testDotDistance() {
@@ -385,8 +330,7 @@ function rotateDot(dot, angle) {
     return [x, y, dot[2]];
 }
 
-// testDotDistance();
-// testClosestMatch();
+testDotDistance();
 // testMatchDots();
 
 async function start() {
