@@ -29,6 +29,7 @@ const params = {
   filter: { min: 0, max: 180 },
   radius: 0.45,
   minimalPairs: true,
+  inverse: false,
 
   infection: false,
   infectNeighbors: 0.1,
@@ -48,6 +49,8 @@ function createPane() {
   fParams.addInput(params, 'filter', { min: 0, max: 255, step: 1 });
   fParams.addInput(params, 'radius', { min: 0.05, max: 0.6 });
   fParams.addInput(params, 'minimalPairs');
+  fParams.addInput(params, 'inverse');
+
   fParams.addInput(params, 'infection').on('change', (e) => {
       if (e.value === true) {
           console.log("Resetting infection Set");
@@ -77,7 +80,7 @@ const sketch = ({width, height}) => {
         return true;
     }
 
-    context.fillStyle = 'white';
+    context.fillStyle = params.inverse ? 'black' : 'white';
     context.fillRect(0, 0, width, height);
 
     const cell = params.cell;
@@ -251,10 +254,10 @@ function getGlyphDots(glyph, rows, cols, cell) {
     glyphCanvas.width = cols;
     glyphCanvas.height = rows;
 
-    glyphContext.fillStyle = 'white';
+    glyphContext.fillStyle = params.inverse ? 'black' : 'white';
     glyphContext.fillRect(0, 0, cols, rows);
 
-    glyphContext.fillStyle = 'black';
+    glyphContext.fillStyle = params.inverse ? 'white' : 'black';
     glyphContext.font = `${cols}px ${fontFamily}`;
 
     const metrics = glyphContext.measureText(glyph);
