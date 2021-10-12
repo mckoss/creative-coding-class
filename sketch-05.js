@@ -29,7 +29,8 @@ const params = {
   filter: { min: 0, max: 180 },
   radius: 0.45,
   minimalPairs: true,
-  infection: false
+  infection: false,
+  infectNeighbors: 0.1,
 };
 
 let infectedSource = null;
@@ -48,10 +49,11 @@ function createPane() {
   fParams.addInput(params, 'infection').on('change', (e) => {
       if (e.value === true) {
           console.log("Resetting infection Set");
-          infectedSource = new Set();
-          infectedTarget = new Set();
+          infectedSource = new Map();
+          infectedTarget = new Map();
       }
   });
+  fParams.addInput(params, 'infectNeighbors', {min: 0, max: 1});
 
   pane.on('change', () => {
       manager.render();
@@ -93,12 +95,13 @@ const sketch = ({width, height}) => {
             // Start off with a single infected dot.
             if (infectedSource.size === 0) {
                 let i = random.rangeFloor(0, sourceDots.length);
-                infectedSource.add(i);
+                infectedSource.set(i, 1);
             }
         }
         pairs = pairDots(sourceDots, targetDots);
         console.log(`Next Transition: ${previousGlyph} (${sourceDots.length}) => ` +
                     `${glyph} (${targetDots.length}) (${pairs.length} pairs)`);
+
         for (let pair of pairs) {
             let sourceDot = sourceDots[pair.i];
             let targetDot = targetDots[pair.j];
@@ -110,21 +113,64 @@ const sketch = ({width, height}) => {
             pair.dx = targetDot[0] - sourceDot[0];
             pair.dy = targetDot[1] - sourceDot[1];
             const dist = Math.sqrt(pair.dx ** 2 + pair.dy ** 2);
-            pair.dx *= pair.speed / dist;
-            pair.dy *= pair.speed / dist;
+            if (dist >= 1) {
+                pair.dx *= pair.speed / dist;
+                pair.dy *= pair.speed / dist;
+            }
+        }
+
+        // Propagate the infection age to one target for each source.
+        // All others get age==1 infection.
+        // Two sources hitting the same target should keep target at max
+        // of source ages.
+        if (params.infection) {
+            for (let pair of pairs) {
+                if (infectedSource.has(pair.i)) {
+                    let age = infectedTarget.get(pair.j) || 0;
+                    age = Math.max(age, infectedSource.get(pair.i) + 1);
+                    infectedTarget.set(pair.j, age);
+                }
+            }
+
+            // Need to be able to look up neighbors in constant time.
+            let targetIndexFromPos = new Map();
+            for (let j = 0; j < targetDots.length; j++) {
+                let dot = targetDots[j];
+                targetIndexFromPos.set(`${dot[0]}-${dot[1]}`, j);
+            }
+
+            // Propagate infection to neighbors with some probability.
+            for (let j = 0; j < targetDots.length; j++) {
+                if (!infectedTarget.has(j)) {
+                    continue;
+                }
+
+                let [x, y] = targetDots[j];
+
+                for (let [dx, dy] of [[0, 1], [1, 0], [0, -1], [-1, 0]]) {
+                    if (random.value() > params.infectNeighbors) {
+                        continue;
+                    }
+
+                    let k = targetIndexFromPos.get(`${x + dx * cell}-${y + dy * cell}`);
+                    if (k !== undefined && !infectedTarget.has(k)) {
+                        console.log(`Infecting ${k} => ${targetDots[k]}`)
+                        infectedTarget.set(k, 1);
+                    }
+                }
+            }
+
+            console.log(`Infections: ${infectedSource.size} => ${infectedTarget.size}`);
         }
     }
 
     // Draw all the dots (some may overlap);
     for (let pair of pairs) {
-        // Infect all target locations associated with the source dot.
-        if (params.infection && (infectedSource.has(pair.i) ||
-                                 infectedTarget.has(pair.j) && pair.speed === 0)) {
-            context.fillStyle = `red`;
-            infectedTarget.add(pair.j);
-        } else {
-            context.fillStyle = `rgb(${pair.v}, ${pair.v}, ${pair.v})`;
+        let age = 0;
+        if (params.infection) {
+            age = getInfectionAge(pair);
         }
+        context.fillStyle = getPairColor(age, pair);
 
         context.save();
         context.translate(pair.x, pair.y);
@@ -166,7 +212,8 @@ const sketch = ({width, height}) => {
         if (params.infection) {
             // Infection carries over to next animation.
             infectedSource = infectedTarget;
-            infectedTarget = new Set();
+            infectedTarget = new Map();
+            console.log(infectedSource);
         }
         pairs = null;
         targetDots = null;
@@ -302,6 +349,38 @@ function dotDistance(dot1, dot2) {
         (dot1[1] - dot2[1]) ** 2 +
         (dot1[2] - dot2[2]) ** 2 * 4);
 }
+
+function getInfectionAge(pair) {
+    let age = infectedSource.get(pair.i) || 0;
+    if (pair.speed === 0) {
+        age = Math.max(age, infectedTarget.get(pair.j) || 0);
+    }
+    return age;
+}
+
+const infectionBreaks = [
+    { min: 1, color: `yellow`},
+    { min: 7, color: `orange`},
+    { min: 26, color: `red`},
+];
+
+function getPairColor(age, pair) {
+    let color = `rgb(${pair.v}, ${pair.v}, ${pair.v})`;
+
+    if (age === 0) {
+        return color;
+    }
+
+    for (let b of infectionBreaks) {
+        if (age >= b.min) {
+            color = b.color;
+        }
+    }
+
+    return color;
+}
+
+// =============================== Tests ============================
 
 function testDotDistance() {
     console.log("Begin dotDistance test.");
