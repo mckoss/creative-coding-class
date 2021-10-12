@@ -29,7 +29,11 @@ const params = {
   filter: { min: 0, max: 180 },
   radius: 0.45,
   minimalPairs: true,
+  infection: false
 };
+
+let infectedSource = null;
+let infectedTarget = null;
 
 function createPane() {
   const pane = new Pane();
@@ -41,6 +45,13 @@ function createPane() {
   fParams.addInput(params, 'filter', { min: 0, max: 255, step: 1 });
   fParams.addInput(params, 'radius', { min: 0.05, max: 0.6 });
   fParams.addInput(params, 'minimalPairs');
+  fParams.addInput(params, 'infection').on('change', (e) => {
+      if (e.value === true) {
+          console.log("Resetting infection Set");
+          infectedSource = new Set();
+          infectedTarget = new Set();
+      }
+  });
 
   pane.on('change', () => {
       manager.render();
@@ -78,6 +89,13 @@ const sketch = ({width, height}) => {
         } else {
             sourceDots = getGlyphDots('+', rows, cols, cell);
         }
+        if (params.infection) {
+            // Start off with a single infected dot.
+            if (infectedSource.size === 0) {
+                let i = random.rangeFloor(0, sourceDots.length);
+                infectedSource.add(i);
+            }
+        }
         pairs = pairDots(sourceDots, targetDots);
         console.log(`Next Transition: ${previousGlyph} (${sourceDots.length}) => ` +
                     `${glyph} (${targetDots.length}) (${pairs.length} pairs)`);
@@ -99,7 +117,14 @@ const sketch = ({width, height}) => {
 
     // Draw all the dots (some may overlap);
     for (let pair of pairs) {
-        context.fillStyle = `rgb(${pair.v}, ${pair.v}, ${pair.v})`;
+        // Infect all target locations associated with the source dot.
+        if (params.infection && (infectedSource.has(pair.i) ||
+                                 infectedTarget.has(pair.j) && pair.speed === 0)) {
+            context.fillStyle = `red`;
+            infectedTarget.add(pair.j);
+        } else {
+            context.fillStyle = `rgb(${pair.v}, ${pair.v}, ${pair.v})`;
+        }
 
         context.save();
         context.translate(pair.x, pair.y);
@@ -138,6 +163,11 @@ const sketch = ({width, height}) => {
     
     if (isFinished) {
         waiting = true;
+        if (params.infection) {
+            // Infection carries over to next animation.
+            infectedSource = infectedTarget;
+            infectedTarget = new Set();
+        }
         pairs = null;
         targetDots = null;
         sourceDots = null;
@@ -216,35 +246,21 @@ function pairDots(sourceDots, targetDots) {
     let results = [];
 
     // Add pairings for any dot that doesn't have any yet.
-    // Only allow the smaller set to double up pairings UNTIL
-    // both sides have the same availability - then require
-    // only 1-1 mappings therafter.
-    let surplus = sourceDots.length - targetDots.length;
+    // Only allow matches with both sides unmatched UNTIL
+    // all the items in the smaller set are matched.  Then
+    // all branching over elements in the smaller set.
+    let singletons = Math.min(sourceDots.length, targetDots.length);
     for (let pair of pairings) {
         if (params.minimalPairs) {
-            if (surplus < 0) {
-                if (targetDegree.has(pair.j)) {
-                    continue;
-                }
-                if (sourceDegree.has(pair.i)) {
-                    surplus++;
-                }
-            } else if (surplus > 0) {
-                if (sourceDegree.has(pair.i)) {
-                    continue;
-                }
-                if (targetDegree.has(pair.j)) {
-                    surplus--;
-                }
-            } else {
+            if (singletons > 0) {
                 if (sourceDegree.has(pair.i) || targetDegree.has(pair.j)) {
                     continue;
                 }
+                singletons--;
             }
-        } else {
-            if (sourceDegree.has(pair.i) && targetDegree.has(pair.j)) {
-                continue;
-            }
+        }
+        if (sourceDegree.has(pair.i) && targetDegree.has(pair.j)) {
+            continue;
         }
         results.push(pair);
         incMap(sourceDegree, pair.i);
