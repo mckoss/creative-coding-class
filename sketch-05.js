@@ -293,35 +293,31 @@ function testClosestMatch() {
     console.log("End closestMatch Test");
 }
 
-function testMatchDots() {
-    console.log("Begin matchDots Test");
+function testPairDots() {
+    console.log("Begin pairDots Test");
 
     let empty1 = [];
     let empty2 = [];
-    matchDots(empty1, empty2);
-    console.assert(empty1.length === 0, "empty1 0");
-    console.assert(empty2.length === 0, "empty2 0");
+    let pairs = pairDots(empty1, empty2);
+    console.assert(pairs.length === 0, "empty pairs");
 
     let square = [[-1, -1, 0], [-1, 1, 0], [1, 1, 0], [1, -1, 0]];
 
     let origin = [[0, 0, 0]];
-    matchDots(origin, square);
-    console.assert(origin.length === 4, `origin expanded to 4 elements (not ${origin.length})`);
-    for (let dot of origin) {
-        console.assert(dot[0] === 0 && dot[1] === 0, `${dot}`)
-    }
+    pairs = pairDots(origin, square);
+    console.assert(pairsString(pairs) === '[{"i":0,"j":0},{"i":0,"j":1},{"i":0,"j":2},{"i":0,"j":3}]', `${pairs}`);
 
     let pair = [[-5, 0, 0], [5, 0, 0]];
-    matchDots(pair, square);
-    console.assert(pair.length === 4, `pair ${pair.length}`);
-    console.assert(pair[0][0] === -5 && pair[1][0] === -5, `${pair}`);
+    pairs = pairDots(pair, square);
+    console.assert(pairs.length === 4, `pair ${pairs.length}`);
+    console.assert(pairsString(pairs) === '[{"i":0,"j":0},{"i":0,"j":1},{"i":1,"j":2},{"i":1,"j":3}]', `${pairs}`);
 
     let rotatedSquare = square.map((dot) => rotateDot(dot, Math.PI/2));
 
-    matchDots(square, rotatedSquare);
-    console.assert(square[0][0] === 1, `${square}`);
+    pairs = pairDots(square, rotatedSquare);
+    console.assert(pairsString(pairs) === '[{"i":0,"j":1},{"i":1,"j":2},{"i":2,"j":3},{"i":3,"j":0}]', `${pairs}`);
 
-    console.log("End matchDots Test");
+    console.log("End pairDots Test");
 }
 
 function rotateDot(dot, angle) {
@@ -330,8 +326,15 @@ function rotateDot(dot, angle) {
     return [x, y, dot[2]];
 }
 
+function pairsString(pairs) {
+    return JSON.stringify(pairs.map((pair) => {
+        let { i, j } = pair;
+        return { i, j };
+    }));
+}
+
 testDotDistance();
-// testMatchDots();
+testPairDots();
 
 async function start() {
     manager = await canvasSketch(sketch, settings);
