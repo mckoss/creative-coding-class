@@ -211,19 +211,24 @@ function pairDots(sourceDots, targetDots) {
 
     let numPairs = Math.max(sourceDots.length, targetDots.length);
 
-    let sourcesPaired = new Set();
-    let targetsPaired = new Set();
+    let sourceDegree = new Map();
+    let targetDegree = new Map();
     let results = [];
 
     for (let pair of pairings) {
-        if (!sourcesPaired.has(pair.i) || !targetsPaired.has(pair.j)) {
+        if (!sourceDegree.get(pair.i) || !targetDegree.get(pair.j)) {
             results.push(pair);
-            sourcesPaired.add(pair.i);
-            targetsPaired.add(pair.j);
+            incMap(sourceDegree, pair.i);
+            incMap(targetDegree, pair.j);
         }
     }
 
     return results;
+}
+
+function incMap(m, key) {
+    let v = m.get(key) || 0;
+    m.set(key, v + 1);
 }
 
 function dotDistance(dot1, dot2) {
@@ -256,43 +261,6 @@ function testDotDistance() {
     console.log("End dotDistanceTest");
 }
 
-function testClosestMatch() {
-    console.log("Begin closestMatch Test");
-
-    let square = [[-1, -1, 0], [-1, 1, 0], [1, 1, 0], [1, -1, 0]];
-    let rotatedSquare = square.map((dot) => rotateDot(dot, Math.PI/5));
-
-    for (let i = 0; i < square.length; i++) {
-        let j = closestMatch(square[i], rotatedSquare);
-        console.assert(j === i, `PI/5: ${square[i]} ${j} != ${i}`);
-    }
-
-    rotatedSquare = square.map((dot) => rotateDot(dot, Math.PI/2));
-
-    for (let i = 0; i < square.length; i++) {
-        let j = closestMatch(square[i], rotatedSquare);
-        console.assert(j === (i + 1) % 4, `PI/2: ${square[i]} ${j} != ${i}`);
-    }
-
-    rotatedSquare = square.map((dot) => rotateDot(dot, Math.PI));
-
-    for (let i = 0; i < square.length; i++) {
-        let j = closestMatch(square[i], rotatedSquare);
-        console.assert(j === (i + 2) % 4, `PI/2: ${square[i]} ${j} != ${i}`);
-    }
-
-    let coloredSquare = [[-1, -1, 2], [-1, 1, 0], [1, 1, 0], [1, -1, 0]];
-    rotatedSquare = coloredSquare.map((dot) => rotateDot(dot, Math.PI/2));
-    let expected = [0, 2, 3, 1];
-
-    for (let i = 0; i < coloredSquare.length; i++) {
-        let j = closestMatch(coloredSquare[i], rotatedSquare);
-        console.assert(j === expected[i], `PI/2-colored: ${square[i]} ${j} != ${expected[i]}`);
-    }
-
-    console.log("End closestMatch Test");
-}
-
 function testPairDots() {
     console.log("Begin pairDots Test");
 
@@ -305,19 +273,28 @@ function testPairDots() {
 
     let origin = [[0, 0, 0]];
     pairs = pairDots(origin, square);
-    console.assert(pairsString(pairs) === '[{"i":0,"j":0},{"i":0,"j":1},{"i":0,"j":2},{"i":0,"j":3}]', `${pairs}`);
+    assertPairs(pairs, '[{"i":0,"j":0},{"i":0,"j":1},{"i":0,"j":2},{"i":0,"j":3}]');
 
     let pair = [[-5, 0, 0], [5, 0, 0]];
     pairs = pairDots(pair, square);
-    console.assert(pairs.length === 4, `pair ${pairs.length}`);
-    console.assert(pairsString(pairs) === '[{"i":0,"j":0},{"i":0,"j":1},{"i":1,"j":2},{"i":1,"j":3}]', `${pairs}`);
+    assertPairs(pairs, '[{"i":0,"j":0},{"i":0,"j":1},{"i":1,"j":2},{"i":1,"j":3}]');
 
     let rotatedSquare = square.map((dot) => rotateDot(dot, Math.PI/2));
 
     pairs = pairDots(square, rotatedSquare);
-    console.assert(pairsString(pairs) === '[{"i":0,"j":1},{"i":1,"j":2},{"i":2,"j":3},{"i":3,"j":0}]', `${pairs}`);
+    assertPairs(pairs, '[{"i":0,"j":1},{"i":1,"j":2},{"i":2,"j":3},{"i":3,"j":0}]');
+
+    // Optimization test - naive pairing using 3 instead of 2 pairs.
+    let source = [[0, 0, 0], [0, 1, 0]];
+    let target = [[2, 1, 0], [2, 2, 0]];
+    pairs = pairDots(source, target);
+    assertPairs(pairs, '[{"i":1,"j":0},{"i":1,"j":1}]');
 
     console.log("End pairDots Test");
+
+    function assertPairs(pairs, s) {
+        console.assert(pairsString(pairs) === s, `Unexpected pairs:\n${pairsString(pairs)} !=\n${s}`);
+    }
 }
 
 function rotateDot(dot, angle) {
