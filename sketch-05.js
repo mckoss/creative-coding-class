@@ -45,7 +45,7 @@ function createPane() {
 
   const fParams = pane.addFolder({title: 'Params'});
   fParams.addInput(params, 'speed', {min: 1, max: 20});
-  fParams.addInput(params, 'cell', { min: 5, max: 100, step: 1 });
+  fParams.addInput(params, 'cell', { min: 10, max: 100, step: 1 });
   fParams.addInput(params, 'filter', { min: 0, max: 255, step: 1 });
   fParams.addInput(params, 'radius', { min: 0.05, max: 0.6 });
   fParams.addInput(params, 'minimalPairs');
