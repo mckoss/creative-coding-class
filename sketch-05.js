@@ -16,7 +16,7 @@ let manager;
 const fontSize = 1080;
 const fontFamily = 'Times';
 
-let message = "ABCDEFGHIJKLMNOPQRSTUVWXYZ";
+let message = ['C', 'O', 'V', 'I', 'D', '\u{1F571}'];
 let nextCharacter = 0;
 
 const glyphCanvas = document.createElement('canvas');
@@ -29,8 +29,10 @@ const params = {
   filter: { min: 0, max: 180 },
   radius: 0.45,
   minimalPairs: true,
+
   infection: false,
   infectNeighbors: 0.1,
+  fatalities: 0.02,
 };
 
 let infectedSource = null;
@@ -54,6 +56,7 @@ function createPane() {
       }
   });
   fParams.addInput(params, 'infectNeighbors', {min: 0, max: 1});
+  fParams.addInput(params, 'fatalities', {min: 0, max: 0.2});
 
   pane.on('change', () => {
       manager.render();
@@ -141,7 +144,7 @@ const sketch = ({width, height}) => {
 
             // Propagate infection to neighbors with some probability.
             for (let j = 0; j < targetDots.length; j++) {
-                if (!infectedTarget.has(j)) {
+                if (!infectedTarget.has(j) || infectedTarget.get(j) >= deadAge) {
                     continue;
                 }
 
@@ -157,6 +160,21 @@ const sketch = ({width, height}) => {
                         console.log(`Infecting ${k} => ${targetDots[k]}`)
                         infectedTarget.set(k, 1);
                     }
+                }
+            }
+
+            // Determine who lives and who dies!
+            for (let j = 0; j < targetDots.length; j++) {
+                let age = infectedTarget.get(j) || 0;
+                if (age !== recoveryAge) {
+                    continue;
+                }
+
+                if (random.value() < params.fatalities) {
+                    console.log(`${j} died!`);
+                    infectedTarget.set(j, deadAge);
+                } else {
+                    infectedTarget.set(j, recoveryAge + 1);
                 }
             }
 
@@ -358,10 +376,15 @@ function getInfectionAge(pair) {
     return age;
 }
 
+const recoveryAge = 30;
+const deadAge = 10000;
+
 const infectionBreaks = [
-    { min: 1, color: `yellow`},
-    { min: 7, color: `orange`},
-    { min: 26, color: `red`},
+    { min: 1, color: `yellow` },
+    { min: 2, color: `orange` },
+    { min: 10, color: `red` },
+    { min: recoveryAge, color: `blue` },
+    { min: deadAge, color: `rgba(0, 0, 0, 0)`},
 ];
 
 function getPairColor(age, pair) {
