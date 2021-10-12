@@ -28,6 +28,7 @@ const params = {
   cell: 20,
   filter: { min: 0, max: 180 },
   radius: 0.45,
+  minimalPairs: true,
 };
 
 function createPane() {
@@ -39,6 +40,7 @@ function createPane() {
   fParams.addInput(params, 'cell', { min: 5, max: 100, step: 1 });
   fParams.addInput(params, 'filter', { min: 0, max: 255, step: 1 });
   fParams.addInput(params, 'radius', { min: 0.05, max: 0.6 });
+  fParams.addInput(params, 'minimalPairs');
 
   pane.on('change', () => {
       manager.render();
@@ -209,19 +211,62 @@ function pairDots(sourceDots, targetDots) {
 
     pairings.sort((a, b) => a.dist - b.dist);
 
-    let numPairs = Math.max(sourceDots.length, targetDots.length);
-
     let sourceDegree = new Map();
     let targetDegree = new Map();
     let results = [];
 
+    // Add pairings for any dot that doesn't have any yet.
+    // Only allow the smaller set to double up pairings UNTIL
+    // both sides have the same availability - then require
+    // only 1-1 mappings therafter.
+    let surplus = sourceDots.length - targetDots.length;
     for (let pair of pairings) {
-        if (!sourceDegree.get(pair.i) || !targetDegree.get(pair.j)) {
-            results.push(pair);
-            incMap(sourceDegree, pair.i);
-            incMap(targetDegree, pair.j);
+        if (params.minimalPairs) {
+            if (surplus < 0) {
+                if (targetDegree.has(pair.j)) {
+                    continue;
+                }
+                if (sourceDegree.has(pair.i)) {
+                    surplus++;
+                }
+            } else if (surplus > 0) {
+                if (sourceDegree.has(pair.i)) {
+                    continue;
+                }
+                if (targetDegree.has(pair.j)) {
+                    surplus--;
+                }
+            } else {
+                if (sourceDegree.has(pair.i) || targetDegree.has(pair.j)) {
+                    continue;
+                }
+            }
+        } else {
+            if (sourceDegree.has(pair.i) && targetDegree.has(pair.j)) {
+                continue;
+            }
+        }
+        results.push(pair);
+        incMap(sourceDegree, pair.i);
+        incMap(targetDegree, pair.j);
+    }
+
+    let redundant = 0;
+
+    // Remove redundant pairings - dots with more than one
+    // pairing on both sides of a pair.
+    for (let i = results.length - 1; i >= 0; i--) {
+        let pair = results[i];
+        // Pairing is redundant!
+        if (sourceDegree.get(pair.i) > 1 && targetDegree.get(pair.j) > 1) {
+            decMap(sourceDegree, pair.i);
+            decMap(targetDegree, pair.j);
+            results.splice(i, 1);
+            redundant++;
         }
     }
+
+    console.log(`Removed ${redundant} redundant pairs.`);
 
     return results;
 }
@@ -229,6 +274,10 @@ function pairDots(sourceDots, targetDots) {
 function incMap(m, key) {
     let v = m.get(key) || 0;
     m.set(key, v + 1);
+}
+
+function decMap(m, key) {
+    m.set(key, m.get(key) - 1);
 }
 
 function dotDistance(dot1, dot2) {
@@ -278,13 +327,20 @@ function testPairDots() {
         [ pair, square, '[{"i":0,"j":0},{"i":0,"j":1},{"i":1,"j":2},{"i":1,"j":3}]'],
         [ square, slightlyRotatedSquare, '[{"i":0,"j":0},{"i":1,"j":1},{"i":2,"j":2},{"i":3,"j":3}]'],
         [ square, rotatedSquare, '[{"i":0,"j":1},{"i":1,"j":2},{"i":2,"j":3},{"i":3,"j":0}]'],
-        [ source, target, '[{"i":1,"j":0},{"i":1,"j":1}]'],
+        [ source, target, '[{"i":0,"j":0},{"i":1,"j":1}]'],
 
     ];
 
     for (let i = 0; i < tests.length; i++) {
         assertPairs(i, pairDots(tests[i][0], tests[i][1]), tests[i][2]);
     }
+
+    params.minimalPairs = false;
+    for (let i = 0; i < tests.length; i++) {
+        assertPairs(i, pairDots(tests[i][0], tests[i][1]), tests[i][2]);
+    }
+
+    params.minimapPairs = true;
 
     console.log("End pairDots Test");
 
@@ -305,8 +361,6 @@ function rotateDot(dot, angle) {
     let y = dot[0] * Math.sin(angle) + dot[1] * Math.cos(angle);
     return [x, y, dot[2]];
 }
-
-
 
 testDotDistance();
 testPairDots();
