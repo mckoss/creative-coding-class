@@ -1,11 +1,29 @@
 const canvasSketch = require('canvas-sketch');
 const math = require('canvas-sketch-util/math');
 const random = require('canvas-sketch-util/random');
+import {Pane} from 'tweakpane';
+import * as EssentialsPlugin from '@tweakpane/plugin-essentials';
 
 const settings = {
   dimensions: [ 1024, 1024 ],
   animate: true
 };
+
+const params = {
+  speed: 10,
+  dots: 75,
+  radius: 40,
+};
+
+function createPane() {
+  const pane = new Pane();
+  pane.registerPlugin(EssentialsPlugin);
+
+  const fParams = pane.addFolder({title: 'Params'});
+  fParams.addInput(params, 'speed', {min: -20, max: 20});
+  fParams.addInput(params, 'dots', {min: 1, max: 400, step: 1});
+  fParams.addInput(params, 'radius', {min: 2, max: 60});
+}
 
 const sketch = () => {
   let rot = 0;
@@ -13,7 +31,7 @@ const sketch = () => {
     context.fillStyle = 'white';
     context.fillRect(0, 0, width, height);
 
-    rot += Math.PI/16/60;
+    rot += Math.PI/32/60 * params.speed;
 
     const radius = width / 3;
     context.fillStyle = 'red';
@@ -21,20 +39,20 @@ const sketch = () => {
     context.translate(width / 2, height / 2);
 
     context.fillStyle = 'rgba(0, 0, 0, 0.2)';
-    for (let {x, y, z} of fibPack(75, radius, rot)) {
+    for (let {x, y, z} of fibPack(params.dots, radius, rot)) {
         if (z < 0) {
             continue;
         }
         context.save();
         transformSpherePoint(context, {x, y, z}, radius);
         context.beginPath();
-        context.arc(0, 0, 40, 0, Math.PI * 2);
+        context.arc(0, 0, params.radius, 0, Math.PI * 2);
         context.fill();
         context.restore();
     }
 
     context.fillStyle = 'rgba(255, 0, 0, 0.6)';
-    for (let {x, y, z} of fibPack(75, radius, rot)) {
+    for (let {x, y, z} of fibPack(params.dots, radius, rot)) {
         if (z > 0) {
             continue;
         }
@@ -42,7 +60,7 @@ const sketch = () => {
 
         transformSpherePoint(context, {x, y, z}, radius);
         context.beginPath();
-        context.arc(0, 0, 40, 0, Math.PI * 2);
+        context.arc(0, 0, params.radius, 0, Math.PI * 2);
         context.fill();
         context.restore();
     }
@@ -66,12 +84,6 @@ function *fibPack(n, radius, rot=0) {
   }
 }
 
-for (let i of fibPack(20, 10)) {
-  console.log(i);
-}
-
-canvasSketch(sketch, settings);
-
 function transformSpherePoint(context, {x, y, z}, r) {
     const d = Math.sqrt(x ** 2 + y ** 2);
     if (d > r) {
@@ -85,3 +97,6 @@ function transformSpherePoint(context, {x, y, z}, r) {
     context.scale(1, squash);
     context.beginPath();
 }
+
+createPane();
+canvasSketch(sketch, settings);

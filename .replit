@@ -1,2 +1,2 @@
 language = "nodejs"
-run = "tools/run-sketch sketch-05"
+run = "tools/run-sketch elipses.js"
