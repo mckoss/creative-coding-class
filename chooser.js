@@ -34,7 +34,7 @@ document.addEventListener('DOMContentLoaded', () => {
 function addSketchMenu(sketches, onSketch) {
   // Retain the viewed sketch across browser refreshes
   let currentSketch = parseInt(localStorage.getItem('current-sketch'));
-  if (currentSketch === undefined || currentSketch >= sketches.length) {
+  if (isNaN(currentSketch) || currentSketch >= sketches.length) {
     currentSketch = 0;
     localStorage.setItem('current-sketch', currentSketch);
   }
