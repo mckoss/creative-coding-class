@@ -2,4 +2,8 @@ PATH="$HOME/creative-coding-class/tools:$(npm bin):$PATH"
 export CANVAS_SKETCH_OUTPUT="$(pwd)/snapshots"
 export FFMPEG_PATH="/home/runner/creative-coding-class/node_modules/ffmpeg-static/ffmpeg"
 
-canvas-sketch $1 --port 443 --stream
+if [[ "$PORT" == "" ]]; then
+    PORT=8080
+fi
+
+canvas-sketch $1 --port $PORT --stream
