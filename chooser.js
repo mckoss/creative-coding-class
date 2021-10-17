@@ -8,6 +8,8 @@ const settings = {
 };
 
 document.addEventListener('DOMContentLoaded', () => {
+  let managerP = null;
+
   addSketchMenu(sketches, (sketch, div) => {
     if (sketch === undefined) {
       console.log("Undefined sketch");
@@ -20,7 +22,12 @@ document.addEventListener('DOMContentLoaded', () => {
       sketch.createPane(div);
     }
   
-    canvasSketch(sketch.sketch, settings);
+    // Stop the old sketch - we don't bother garbage collecting these but just
+    // want to ensure our sketch render function is no longer being called.
+    if (managerP !== null) {
+      managerP.then((manager) => manager.stop());
+    }
+    managerP = canvasSketch(sketch.sketch, settings);
   });
 });
 
@@ -57,7 +64,14 @@ function addSketchMenu(sketches, onSketch) {
   document.body.appendChild(div);
   changeCurrentSketch();
 
+  // Wipe out any old sketch, and create a new one.
   function changeCurrentSketch() {
+    pane.innerHTML = null;
+    let canvas = document.querySelector('canvas');
+    if (canvas !== null) {
+      canvas.remove();
+    }
+
     let sketch = sketches[select.value];
     onSketch(sketch, pane);
   }
