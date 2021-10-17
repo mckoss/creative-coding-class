@@ -1,7 +1,7 @@
-const canvasSketch = require('canvas-sketch');
-const math = require('canvas-sketch-util/math');
-const random = require('canvas-sketch-util/random');
-import {Pane} from 'tweakpane';
+import canvasSketch from 'canvas-sketch';
+import math from 'canvas-sketch-util/math';
+import random from 'canvas-sketch-util/random';
+import { Pane } from 'tweakpane';
 import * as EssentialsPlugin from '@tweakpane/plugin-essentials';
 
 const settings = {
