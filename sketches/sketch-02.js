@@ -1,6 +1,8 @@
-const canvasSketch = require('canvas-sketch');
 const math = require('canvas-sketch-util/math');
 const random = require('canvas-sketch-util/random');
+
+const name = "Dancing Lines (sketch-02)";
+export { name, sketch };
 
 const settings = {
   dimensions: [ 1080, 1080 ],
@@ -92,5 +94,3 @@ function constrain(x, min, max) {
     }
     return x;
 }
-
-canvasSketch(sketch, settings);

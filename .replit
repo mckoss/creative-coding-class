@@ -1,2 +1,2 @@
 language = "nodejs"
-run = "PORT=443 tools/run-sketch elipses.js"
+run = "PORT=443 tools/run-sketch chooser.js"

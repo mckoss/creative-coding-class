@@ -1,13 +1,11 @@
-import canvasSketch from 'canvas-sketch';
 import math from 'canvas-sketch-util/math';
 import random from 'canvas-sketch-util/random';
 import { Pane } from 'tweakpane';
 import * as EssentialsPlugin from '@tweakpane/plugin-essentials';
 
-const settings = {
-  dimensions: [ 1024, 1024 ],
-  animate: true
-};
+const name = "Elipses";
+
+export { name, sketch, createPane };
 
 const params = {
   speed: 10,
@@ -15,8 +13,8 @@ const params = {
   radius: 40,
 };
 
-function createPane() {
-  const pane = new Pane();
+function createPane(parent) {
+  const pane = new Pane({container: parent});
   pane.registerPlugin(EssentialsPlugin);
 
   const fParams = pane.addFolder({title: 'Params'});
@@ -97,6 +95,3 @@ function transformSpherePoint(context, {x, y, z}, r) {
     context.scale(1, squash);
     context.beginPath();
 }
-
-createPane();
-canvasSketch(sketch, settings);
