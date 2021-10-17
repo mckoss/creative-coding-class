@@ -1,7 +1,7 @@
-const math = require('canvas-sketch-util/math');
-const random = require('canvas-sketch-util/random');
+import math from 'canvas-sketch-util/math';
+import random from 'canvas-sketch-util/random';
 
-const name = "Dancing Lines (sketch-02)";
+const name = "Dancing Lines";
 export { name, sketch };
 
 const settings = {

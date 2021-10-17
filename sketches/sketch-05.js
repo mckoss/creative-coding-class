@@ -1,17 +1,11 @@
-const canvasSketch = require('canvas-sketch');
-const math = require('canvas-sketch-util/math');
-const random = require('canvas-sketch-util/random');
+import math from 'canvas-sketch-util/math';
+import random from 'canvas-sketch-util/random';
+import interpolate from 'color-interpolate';
 import {Pane} from 'tweakpane';
-
 import * as EssentialsPlugin from '@tweakpane/plugin-essentials';
-const interpolate = require('color-interpolate');
 
-const settings = {
-  dimensions: [ 1080, 1080 ],
-  animate: true
-};
-
-let manager;
+const name = "Covid Morphology";
+export { name, sketch, createPane };
 
 const fontSize = 1080;
 const fontFamily = 'Times';
@@ -26,21 +20,21 @@ const glyphContext = glyphCanvas.getContext('2d');
 const params = {
   speed: { min: 4, max: 8 },
   cell: 20,
-  filter: { min: 0, max: 180 },
+  filter: { min: 100, max: 255 },
   radius: 0.45,
   minimalPairs: true,
-  inverse: false,
+  inverse: true,
 
-  infection: false,
+  infection: true,
   infectNeighbors: 0.1,
   fatalities: 0.02,
 };
 
-let infectedSource = null;
-let infectedTarget = null;
+let infectedSource = new Map();
+let infectedTarget = new Map();
 
-function createPane() {
-  const pane = new Pane();
+function createPane(container) {
+  const pane = new Pane({container});
   pane.registerPlugin(EssentialsPlugin);
 
   const fParams = pane.addFolder({title: 'Params'});
@@ -60,10 +54,6 @@ function createPane() {
   });
   fParams.addInput(params, 'infectNeighbors', {min: 0, max: 1});
   fParams.addInput(params, 'fatalities', {min: 0, max: 0.2});
-
-  pane.on('change', () => {
-      manager.render();
-  });
 }
 
 const sketch = ({width, height}) => {
@@ -483,19 +473,5 @@ function rotateDot(dot, angle) {
     return [x, y, dot[2]];
 }
 
-testDotDistance();
-testPairDots();
-
-async function start() {
-    manager = await canvasSketch(sketch, settings);
-}
-
-document.addEventListener('keyup', (e) => {
-    if (e.keyCode > 32 && !e.ctrlKey) {
-        glyph = e.key;
-        manager.render();
-    }
-});
-
-createPane();
-start();
+// testDotDistance();
+// testPairDots();

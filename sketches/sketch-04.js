@@ -1,15 +1,11 @@
-const canvasSketch = require('canvas-sketch');
-const math = require('canvas-sketch-util/math');
-const random = require('canvas-sketch-util/random');
+import math from 'canvas-sketch-util/math';
+import random from 'canvas-sketch-util/random';
+import interpolate from 'color-interpolate';
 import {Pane} from 'tweakpane';
-
 import * as EssentialsPlugin from '@tweakpane/plugin-essentials';
-const interpolate = require('color-interpolate');
 
-const settings = {
-  dimensions: [ 1080, 1080 ],
-  animate: true
-};
+const name = "Wobbly Lines";
+export { name, sketch, createPane };
 
 const params = {
   speed: 10,
@@ -23,6 +19,27 @@ const params = {
 
   freq: 0.002,
   amp: 0.2,
+}
+
+function createPane(container) {
+  const pane = new Pane({container});
+  pane.registerPlugin(EssentialsPlugin);
+
+  const fParams = pane.addFolder({title: 'Grid'});
+  fParams.addInput(params, 'speed');
+  fParams.addInput(params, 'lineCap', { options: {
+    butt: 'butt', square: 'square', round: 'round'
+  }});
+  fParams.addInput(params, 'colorStart');
+  fParams.addInput(params, 'colorEnd');
+  fParams.addInput(params, 'length', { min: 0.1, max: 1 });
+  fParams.addInput(params, 'rows', { min:2, max: 50, step: 1 });
+  fParams.addInput(params, 'cols', { min:2, max: 50, step: 1 });
+  fParams.addInput(params, 'scale', { min: 1, max: 100, step: 1 });
+
+  const fNoise = pane.addFolder({title: 'Noise'});
+  fNoise.addInput(params, 'freq', { min: 0, max: 0.02 });
+  fNoise.addInput(params, 'amp', { min: 0, max: 1 });
 }
 
 const sketch = ({width, height}) => {
@@ -78,26 +95,3 @@ const sketch = ({width, height}) => {
     };
 };
 
-function createPane() {
-  const pane = new Pane();
-  pane.registerPlugin(EssentialsPlugin);
-
-  const fParams = pane.addFolder({title: 'Grid'});
-  fParams.addInput(params, 'speed');
-  fParams.addInput(params, 'lineCap', { options: {
-    butt: 'butt', square: 'square', round: 'round'
-  }});
-  fParams.addInput(params, 'colorStart');
-  fParams.addInput(params, 'colorEnd');
-  fParams.addInput(params, 'length', { min: 0.1, max: 1 });
-  fParams.addInput(params, 'rows', { min:2, max: 50, step: 1 });
-  fParams.addInput(params, 'cols', { min:2, max: 50, step: 1 });
-  fParams.addInput(params, 'scale', { min: 1, max: 100, step: 1 });
-
-  const fNoise = pane.addFolder({title: 'Noise'});
-  fNoise.addInput(params, 'freq', { min: 0, max: 0.02 });
-  fNoise.addInput(params, 'amp', { min: 0, max: 1 });
-}
-
-createPane();
-canvasSketch(sketch, settings);

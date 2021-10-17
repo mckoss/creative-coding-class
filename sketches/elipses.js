@@ -3,8 +3,7 @@ import random from 'canvas-sketch-util/random';
 import { Pane } from 'tweakpane';
 import * as EssentialsPlugin from '@tweakpane/plugin-essentials';
 
-const name = "Elipses";
-
+const name = "Circles on a Sphere";
 export { name, sketch, createPane };
 
 const params = {
@@ -13,8 +12,8 @@ const params = {
   radius: 40,
 };
 
-function createPane(parent) {
-  const pane = new Pane({container: parent});
+function createPane(container) {
+  const pane = new Pane({container});
   pane.registerPlugin(EssentialsPlugin);
 
   const fParams = pane.addFolder({title: 'Params'});

@@ -1,17 +1,13 @@
-const canvasSketch = require('canvas-sketch');
-const math = require('canvas-sketch-util/math');
-const random = require('canvas-sketch-util/random');
-
+import math from 'canvas-sketch-util/math';
+import random from 'canvas-sketch-util/random';
+import interpolate from 'color-interpolate';
 import {Pane} from 'tweakpane';
 import * as EssentialsPlugin from '@tweakpane/plugin-essentials';
-const interpolate = require('color-interpolate');
+
+const name = "Gravitational Attraction";
+export { name, sketch, createPane };
 
 const MARGIN = 32;
-
-const settings = {
-  dimensions: [ 1080, 1080 ],
-  animate: true
-};
 
 // Tweakpane parameters
 const params = {
@@ -22,8 +18,8 @@ const params = {
   track: false
 }
 
-function createPane() {
-  const pane = new Pane();
+function createPane(container) {
+  const pane = new Pane({container});
   pane.registerPlugin(EssentialsPlugin);
 
   const fParams = pane.addFolder({title: 'Params'});
@@ -231,6 +227,3 @@ class Agent {
         other.vel = other.vel.sub(d.mult(a2));
     }
 }
-
-createPane();
-canvasSketch(sketch, settings);

@@ -1,15 +1,16 @@
-const canvasSketch = require('canvas-sketch');
-
-const settings = {
-  dimensions: [ 1080, 1080 ]
-};
+const name = "Boxes";
+export { name, sketch };
 
 const sketch = () => {
+  let oneShot = false;
   return ({ context, width, height }) => {
-    context.fillStyle = 'black';
+	if (oneShot) return;
+	oneShot = true;
+
+    context.fillStyle = 'white';
     context.fillRect(0, 0, width, height);
     context.lineWidth = width * 0.01;
-    context.strokeStyle = "white";
+    context.strokeStyle = "black";
 
     const w 	= width  * 0.10;
 		const h 	= height * 0.10;
@@ -39,5 +40,3 @@ const sketch = () => {
 		}
   };
 };
-
-canvasSketch(sketch, settings);
