@@ -32,6 +32,13 @@ document.addEventListener('DOMContentLoaded', () => {
 });
 
 function addSketchMenu(sketches, onSketch) {
+  // Retain the viewed sketch across browser refreshes
+  let currentSketch = parseInt(localStorage.getItem('current-sketch'));
+  if (currentSketch === undefined || currentSketch >= sketches.length) {
+    currentSketch = 0;
+    localStorage.setItem('current-sketch', currentSketch);
+  }
+
   const div = document.createElement('div');
   div.style = `width: 100%;
                position: absolute;
@@ -62,7 +69,7 @@ function addSketchMenu(sketches, onSketch) {
   div.appendChild(pane);
   
   document.body.appendChild(div);
-  changeCurrentSketch();
+  onSketch(sketches[currentSketch], pane);
 
   // Wipe out any old sketch, and create a new one.
   function changeCurrentSketch() {
@@ -72,6 +79,7 @@ function addSketchMenu(sketches, onSketch) {
       canvas.remove();
     }
 
+    localStorage.setItem('current-sketch', select.value);
     let sketch = sketches[select.value];
     onSketch(sketch, pane);
   }
