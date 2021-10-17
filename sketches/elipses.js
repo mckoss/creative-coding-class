@@ -8,6 +8,7 @@ export { name, sketch, createPane };
 
 const params = {
   speed: 10,
+  tumble: 2,
   dots: 75,
   radius: 40,
 };
@@ -18,30 +19,47 @@ function createPane(container) {
 
   const fParams = pane.addFolder({title: 'Params'});
   fParams.addInput(params, 'speed', {min: -20, max: 20});
+  fParams.addInput(params, 'tumble', {min: -10, max: 10});
   fParams.addInput(params, 'dots', {min: 1, max: 400, step: 1});
   fParams.addInput(params, 'radius', {min: 2, max: 60});
 }
 
 const sketch = () => {
   let rot = 0;
+  let tumble = 0;
+
   return ({ context, width, height }) => {
     context.fillStyle = 'white';
     context.fillRect(0, 0, width, height);
 
     rot += Math.PI/32/60 * params.speed;
+    tumble += Math.PI/32/60 * params.tumble;
 
     const radius = width / 3;
     context.fillStyle = 'red';
 
+    // Move the origin to the center of the screen
     context.translate(width / 2, height / 2);
 
+    let [x, y, z] = [0, radius, 0];
+    ({x, y, z} = rotX({x, y, z}, tumble));
+    context.save();
+    context.strokeStyle = 'DodgerBlue';
+    context.lineWidth = 4;
+    context.beginPath();
+    context.moveTo(x, y);
+    context.lineTo(x, -y);
+    context.stroke();
+    context.restore();
+
     context.fillStyle = 'rgba(0, 0, 0, 0.2)';
-    for (let {x, y, z} of fibPack(params.dots, radius, rot)) {
-        if (z < 0) {
+    for (let point of fibPack(params.dots, radius, rot)) {
+        point = rotX(point, tumble);
+        if (point.z < 0) {
             continue;
         }
         context.save();
-        transformSpherePoint(context, {x, y, z}, radius);
+        transformSpherePoint(context, point);
         context.beginPath();
         context.arc(0, 0, params.radius, 0, Math.PI * 2);
         context.fill();
@@ -49,13 +67,13 @@ const sketch = () => {
     }
 
     context.fillStyle = 'rgba(255, 0, 0, 0.6)';
-    for (let {x, y, z} of fibPack(params.dots, radius, rot)) {
-        if (z > 0) {
+    for (let point of fibPack(params.dots, radius, rot)) {
+        point = rotX(point, tumble);
+        if (point.z > 0) {
             continue;
         }
         context.save();
-
-        transformSpherePoint(context, {x, y, z}, radius);
+        transformSpherePoint(context, point);
         context.beginPath();
         context.arc(0, 0, params.radius, 0, Math.PI * 2);
         context.fill();
@@ -81,7 +99,20 @@ function *fibPack(n, radius, rot=0) {
   }
 }
 
-function transformSpherePoint(context, {x, y, z}, r) {
+// Rotate points around the x axis.
+function rotX({x, y, z}, theta) {
+  [y, z] = rot2(y, z, theta);
+  return {x, y, z};
+};
+
+const rot2 = (x, y, theta) => [
+    x * Math.cos(theta) - y * Math.sin(theta),
+    x * Math.sin(theta) + y * Math.cos(theta)];
+
+// Transform canvas so drawing appears on the surface
+// of a radius r sphere centered at the origin at point x,y,z.
+function transformSpherePoint(context, {x, y, z}) {
+    const r = Math.sqrt(x ** 2 + y ** 2 + z ** 2);
     const d = Math.sqrt(x ** 2 + y ** 2);
     if (d > r) {
         console.log(`Error: point outside of sphere ${d} > ${r}`);
