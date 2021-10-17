@@ -41,18 +41,7 @@ const sketch = () => {
     // Move the origin to the center of the screen
     context.translate(width / 2, height / 2);
 
-    let [x, y, z] = [0, radius, 0];
-    ({x, y, z} = rotX({x, y, z}, tumble));
-    context.save();
-    context.strokeStyle = 'DodgerBlue';
-    context.lineWidth = 4;
-    context.beginPath();
-    context.moveTo(x, y);
-    context.lineTo(x, -y);
-    context.stroke();
-    context.restore();
-
-    context.fillStyle = 'rgba(0, 0, 0, 0.2)';
+    context.fillStyle = 'rgba(200, 200, 200, 1.0)';
     for (let point of fibPack(params.dots, radius, rot)) {
         point = rotX(point, tumble);
         if (point.z < 0) {
@@ -66,6 +55,17 @@ const sketch = () => {
         context.restore();
     }
 
+    let [x, y, z] = [0, radius, 0];
+    ({x, y, z} = rotX({x, y, z}, tumble));
+    context.save();
+    context.strokeStyle = 'DodgerBlue';
+    context.lineWidth = 4;
+    context.beginPath();
+    context.moveTo(x, y);
+    context.lineTo(x, -y);
+    context.stroke();
+    context.restore();
+    
     context.fillStyle = 'rgba(255, 0, 0, 0.6)';
     for (let point of fibPack(params.dots, radius, rot)) {
         point = rotX(point, tumble);
