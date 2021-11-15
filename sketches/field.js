@@ -60,7 +60,7 @@ const sketch = ({width, height}) => {
                 for (let charge of charges) {
                     field += charge.fieldAt(pt);
                 }
-                let c = `rgb(${math.lerp(0, 255, field > 1)}, 0, 0)`;
+                let c = `rgb(${math.lerp(0, 255, field)}, 0, 0)`;
                 context.fillStyle = c;
                 context.fillRect(x - step/2, y - step/2, step, step);
             }
@@ -105,6 +105,8 @@ class Charge {
         if (d2 === 0) {
             return Infinity;
         }
+        // let d = Math.sqrt(d2);
+        // return Math.cos(d / this.r * Math.PI/4);
         return this.r ** 2 / d2;
     }
 }
