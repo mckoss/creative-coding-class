@@ -5,6 +5,7 @@ import * as sketch04 from './sketch-04.js';
 import * as sketch05 from './sketch-05.js';
 import * as test from './test.js';
 import * as sealark from './sealark.js';
+import * as field from './field.js';
 
 const sketches = [
     test,
@@ -14,6 +15,7 @@ const sketches = [
     sketch03,
     sketch05,
     sealark,
+    field,
 ];
 
 export { sketches };
