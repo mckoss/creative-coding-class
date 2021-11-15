@@ -24,7 +24,11 @@ class Vector {
     }
 
     dist(other) {
-        return Math.sqrt((this.x - other.x) ** 2 + (this.y - other.y) ** 2);
+        return Math.sqrt(this.dist2);
+    }
+
+    dist2(other) {
+        return (this.x - other.x) ** 2 + (this.y - other.y) ** 2;
     }
 
     mult(c) {

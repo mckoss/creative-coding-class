@@ -49,6 +49,24 @@ const sketch = ({width, height}) => {
 
         for (let charge of charges) {
             charge.move();
+        }
+
+        let step = width / 80;
+
+        for (let y = step/2; y < height; y += step) {
+            for (let x = step/2 ; x < width; x += step) {
+                let pt = new Vector(x, y);
+                let field = 0;
+                for (let charge of charges) {
+                    field += charge.fieldAt(pt);
+                }
+                let c = `rgb(${math.lerp(0, 255, field > 1)}, 0, 0)`;
+                context.fillStyle = c;
+                context.fillRect(x - step/2, y - step/2, step, step);
+            }
+        }
+
+        for (let charge of charges) {
             charge.draw(context);
         }
     };
@@ -79,5 +97,14 @@ class Charge {
         ctx.arc(0, 0, this.r, 0, 2 * Math.PI);
         ctx.stroke();
         ctx.restore();
+    }
+
+    // Inverse square power - with 1 at distance of r.
+    fieldAt(pt) {
+        let d2 = pt.dist2(this.pos);
+        if (d2 === 0) {
+            return Infinity;
+        }
+        return this.r ** 2 / d2;
     }
 }
