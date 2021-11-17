@@ -6,6 +6,8 @@ import * as EssentialsPlugin from '@tweakpane/plugin-essentials';
 
 import { Vector, Box } from './vector.js';
 
+import { findIsobar } from './marchingbox.js';
+
 const name = "Field Effect";
 export { name, sketch, createPane };
 
@@ -53,22 +55,46 @@ const sketch = ({width, height}) => {
 
         let step = width / 80;
 
+        function fieldStrength(pt) {
+            let field = 0;
+            for (let charge of charges) {
+                field += charge.fieldAt(pt);
+            }
+            return field;
+        }
+
+        function fs2(x, y) {
+            return fieldStrength(new Vector(x, y));
+        }
+
         for (let y = step/2; y < height; y += step) {
             for (let x = step/2 ; x < width; x += step) {
                 let pt = new Vector(x, y);
-                let field = 0;
-                for (let charge of charges) {
-                    field += charge.fieldAt(pt);
-                }
+                let field = fieldStrength(pt);
                 let c = `rgb(${math.lerp(0, 255, field)}, 0, 0)`;
                 context.fillStyle = c;
                 context.fillRect(x - step/2, y - step/2, step, step);
             }
         }
 
-        for (let charge of charges) {
-            charge.draw(context);
+        let isoStep = 10;
+        for (let y = 0; y < height; y += isoStep) {
+            for (let x = 0; x < width; x += isoStep) {
+                let iso = findIsobar([x, y, x + isoStep, y + isoStep], fs2, 1);
+                if (iso !== null) {
+                    for (let i = 0; i < iso.length; i += 2) {
+                        context.beginPath();
+                        context.moveTo(iso[i][0], iso[i][1]);
+                        context.lineTo(iso[i + 1][0], iso[i + 1][1]);
+                        context.stroke();
+                    }
+                }
+            }
         }
+
+        // for (let charge of charges) {
+        //     charge.draw(context);
+        // }
     };
 };
 
