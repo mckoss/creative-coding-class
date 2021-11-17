@@ -80,7 +80,7 @@ const sketch = ({width, height}) => {
         let isoStep = 10;
         for (let y = 0; y < height; y += isoStep) {
             for (let x = 0; x < width; x += isoStep) {
-                let iso = findIsobar([x, y, x + isoStep, y + isoStep], fs2, 1);
+                let iso = findIsobar([x, y, x + isoStep, y + isoStep], fs2, 1.0);
                 if (iso !== null) {
                     for (let i = 0; i < iso.length; i += 2) {
                         context.beginPath();

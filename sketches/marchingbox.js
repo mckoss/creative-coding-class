@@ -55,8 +55,6 @@ function findIsobar(box, fn, value) {
         return [isoPoint(fromSides[0]), isoPoint(toSides[0])];
     }
 
-    return null;
-
     // Saddle point!
     let center = [(box[0] + box[2]) / 2, (box[1] + box[3]) / 2];
     let centerValue = fn(center[0], center[1]);
@@ -65,13 +63,13 @@ function findIsobar(box, fn, value) {
     if (centerAbove) {
         return [
             isoPoint(fromSides[0]), isoPoint(toSides[0]),
-            isoPoint(fromSides[1], isoPoint(toSides[1]))
+            isoPoint(fromSides[1]), isoPoint(toSides[1])
         ];
     }
     
     return [
         isoPoint(fromSides[0]), isoPoint(toSides[1]),
-        isoPoint(fromSides[1],isoPoint(toSides[0]))
+        isoPoint(fromSides[1]) ,isoPoint(toSides[0]),
     ];
 
     function isoPoint(side) {
