@@ -43,7 +43,6 @@ const sketch = ({width, height}) => {
         context.fillStyle = 'black';
         context.fillRect(0, 0, width, height);
         context.lineWidth = 4;
-        context.strokeStyle = "yellow";
 
         if (charges.length !== params.charges) {
             resetCharges();
@@ -71,12 +70,13 @@ const sketch = ({width, height}) => {
             for (let x = step/2 ; x < width; x += step) {
                 let pt = new Vector(x, y);
                 let field = fieldStrength(pt);
-                let c = `rgb(${math.lerp(0, 255, field)}, 0, 0)`;
+                let c = `rgb(${math.lerp(0, 255, field + 0.2)}, 0, 0)`;
                 context.fillStyle = c;
                 context.fillRect(x - step/2, y - step/2, step, step);
             }
         }
 
+        context.strokeStyle = "yellow";
         let isoStep = 10;
         for (let y = 0; y < height; y += isoStep) {
             for (let x = 0; x < width; x += isoStep) {
@@ -92,9 +92,9 @@ const sketch = ({width, height}) => {
             }
         }
 
-        // for (let charge of charges) {
-        //     charge.draw(context);
-        // }
+        for (let charge of charges) {
+            charge.draw(context);
+        }
     };
 };
 
@@ -103,12 +103,14 @@ class Charge {
     pos;
     vel;
     r;
+    charge;
 
     constructor(box) {
         this.box = box;
         this.r = random.range(params.sizeRange.min, params.sizeRange.max);
         this.pos = box.randomPoint(this.r);
         this.vel = Vector.randomUnit().mult(random.range(0, params.maxSpeed));
+        this.charge = Math.random() < 0.2 ? -1 : 1;
     }
 
     move() {
@@ -117,7 +119,11 @@ class Charge {
     }
 
     draw(ctx) {
+        if (this.charge === 1) {
+            return;
+        }
         ctx.save();
+        ctx.strokeStyle = "blue";
         this.pos.translate(ctx);
         ctx.beginPath();
         ctx.arc(0, 0, this.r, 0, 2 * Math.PI);
@@ -129,10 +135,10 @@ class Charge {
     fieldAt(pt) {
         let d2 = pt.dist2(this.pos);
         if (d2 === 0) {
-            return Infinity;
+            return this.charge * Infinity;
         }
         // let d = Math.sqrt(d2);
         // return Math.cos(d / this.r * Math.PI/4);
-        return this.r ** 2 / d2;
+        return this.charge * this.r ** 2 / d2;
     }
 }
